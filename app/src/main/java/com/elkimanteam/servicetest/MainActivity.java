@@ -4,6 +4,7 @@ import android.content.ComponentName;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.os.IBinder;
+import android.os.RemoteException;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
@@ -23,7 +24,9 @@ import android.view.ViewGroup;
 
 import android.widget.TextView;
 
-public class MainActivity extends AppCompatActivity implements ServiceBindLifecycle.Subscriber {
+import com.elkimanteam.servicetest.ISubscriber;
+
+public class MainActivity extends AppCompatActivity implements ISubscriber {
 
     private static final String TAG = "MainActivity";
     /**
@@ -43,7 +46,7 @@ public class MainActivity extends AppCompatActivity implements ServiceBindLifecy
 
     private ServiceConnection serviceConnection;
 
-    private ServiceBindLifecycle.LifecycleBinder bindedService;
+    private IMessageBinder bindedService;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -69,7 +72,7 @@ public class MainActivity extends AppCompatActivity implements ServiceBindLifecy
             }
         });
 
-        Intent serviceIntent = new Intent(this, ServiceBindLifecycle.class);
+        Intent serviceIntent = new Intent(this, ServiceExampleWorker.class);
         startService(serviceIntent);
     }
 
@@ -77,19 +80,27 @@ public class MainActivity extends AppCompatActivity implements ServiceBindLifecy
     protected void onStart() {
         super.onStart();
 
-        Intent serviceIntent = new Intent(this, ServiceBindLifecycle.class);
+        Intent serviceIntent = new Intent(this, ServiceExampleWorker.class);
 
         serviceConnection = new ServiceConnection() {
             @Override
             public void onServiceConnected(ComponentName name, IBinder service) {
                 Log.d(TAG, "Service connnected!");
-                bindedService = (ServiceBindLifecycle.LifecycleBinder) service;
-                bindedService.addSubscriber(MainActivity.this);
+                bindedService = (IMessageBinder) service;
+                try {
+                    bindedService.addSubscriber(MainActivity.this);
+                } catch (RemoteException e) {
+                    e.printStackTrace();
+                }
             }
 
             @Override
             public void onServiceDisconnected(ComponentName name) {
-                bindedService.removeSubscriber(MainActivity.this);
+                try {
+                    bindedService.removeSubscriber(MainActivity.this);
+                } catch (RemoteException e) {
+                    e.printStackTrace();
+                }
             }
         };
         bindService(
@@ -102,7 +113,11 @@ public class MainActivity extends AppCompatActivity implements ServiceBindLifecy
     protected void onStop() {
         super.onStop();
         unbindService(serviceConnection);
-        bindedService.removeSubscriber(MainActivity.this);
+        try {
+            bindedService.removeSubscriber(MainActivity.this);
+        } catch (RemoteException e) {
+            e.printStackTrace();
+        }
         bindedService = null;
         serviceConnection = null;
     }
@@ -137,6 +152,16 @@ public class MainActivity extends AppCompatActivity implements ServiceBindLifecy
     @Override
     public void send(String data) {
         Log.d(TAG, "Received data: " + data);
+    }
+
+    @Override
+    public void basicTypes(int anInt, long aLong, boolean aBoolean, float aFloat, double aDouble, String aString) throws RemoteException {
+
+    }
+
+    @Override
+    public IBinder asBinder() {
+        return null;
     }
 
     /**

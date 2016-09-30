@@ -18,7 +18,8 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <service android:name=".ServiceBindLifecycle" android:exported="false"/>
+        <service android:name=".ServiceExample" android:exported="false"/>
+        <service android:name=".ServiceExampleWorker" android:exported="false"/>
 
     </application>
 

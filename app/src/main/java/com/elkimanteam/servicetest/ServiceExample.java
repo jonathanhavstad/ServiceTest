@@ -2,11 +2,11 @@ package com.elkimanteam.servicetest;
 
 import android.app.Service;
 import android.content.Intent;
-import android.os.AsyncTask;
 import android.os.Binder;
 import android.os.IBinder;
 import android.support.annotation.Nullable;
 import android.util.Log;
+import android.os.Process;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -15,17 +15,23 @@ import java.util.List;
  * Created by jonathanhavstad on 9/29/16.
  */
 
-public class ServiceBindLifecycle extends Service {
+public class ServiceExample extends Service {
     private static final String TAG = "ServiceBindLifecycle";
     private LifecycleBinder lifecycleBinder;
-    private ServiceAsyncTask serviceAsyncTask;
+    private ServiceThread serviceThread;
 
-    public class ServiceAsyncTask extends AsyncTask<Void, Void, Void> {
+    public class ServiceThread extends Thread {
+        private boolean execute;
+
+        public void shouldExecute(boolean execute) {
+            this.execute = execute;
+        }
 
         @Override
-        protected Void doInBackground(Void... params) {
+        public void run() {
+            Process.setThreadPriority(Process.THREAD_PRIORITY_BACKGROUND);
             int step = 0;
-            while (true) {
+            while (execute) {
                 if (lifecycleBinder != null) {
                     lifecycleBinder.sendUpdate(String.valueOf(step++));
                     try {
@@ -41,10 +47,11 @@ public class ServiceBindLifecycle extends Service {
     @Override
     public void onCreate() {
         Log.d(TAG, "onCreate()");
-        if (serviceAsyncTask == null) {
-            serviceAsyncTask = new ServiceAsyncTask();
+        if (serviceThread == null) {
+            serviceThread = new ServiceThread();
         }
-        serviceAsyncTask.execute();
+        serviceThread.shouldExecute(true);
+        serviceThread.start();
         super.onCreate();
     }
 
@@ -57,8 +64,8 @@ public class ServiceBindLifecycle extends Service {
     @Override
     public void onDestroy() {
         Log.d(TAG, "onDestroy()");
-        if (serviceAsyncTask != null) {
-            serviceAsyncTask.cancel(true);
+        if (serviceThread != null) {
+            serviceThread.shouldExecute(false);
         }
         super.onDestroy();
     }
@@ -87,28 +94,5 @@ public class ServiceBindLifecycle extends Service {
 
     public interface Subscriber {
         void send(String data);
-    }
-
-    public class LifecycleBinder extends Binder {
-        private ServiceBindLifecycle serviceBindLifecycle;
-        private List<Subscriber> subscribers = new ArrayList<>();
-
-        public LifecycleBinder(ServiceBindLifecycle serviceBindLifecycle) {
-            this.serviceBindLifecycle = serviceBindLifecycle;
-        }
-        public ServiceBindLifecycle getServiceBindLifecycle() {
-            return serviceBindLifecycle;
-        }
-        public void addSubscriber(Subscriber subscriber) {
-            subscribers.add(subscriber);
-        }
-        public void removeSubscriber(Subscriber subscriber) {
-            subscribers.remove(subscriber);
-        }
-        public void sendUpdate(String data) {
-            for (Subscriber subscriber : subscribers) {
-                subscriber.send(data);
-            }
-        }
     }
 }

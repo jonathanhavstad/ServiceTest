@@ -5,6 +5,7 @@ import android.content.Intent;
 import android.support.test.InstrumentationRegistry;
 import android.support.test.espresso.Espresso;
 import android.support.test.rule.ActivityTestRule;
+import android.support.test.rule.ServiceTestRule;
 import android.support.test.runner.AndroidJUnit4;
 
 import org.junit.Rule;
@@ -31,6 +32,10 @@ public class ExampleInstrumentedTest {
     public IntentsTestRule<MainActivity> mActivityIntentsTestRule =
             new IntentsTestRule<>(MainActivity.class);
 
+    @Rule
+    public ServiceTestRule mServiceTestRule =
+            new ServiceTestRule();
+
     @Test
     public void useAppContext() throws Exception {
         // Context of the app under test.
@@ -38,10 +43,6 @@ public class ExampleInstrumentedTest {
 
         assertEquals("com.elkimanteam.servicetest", appContext.getPackageName());
 
-        Intent intent = new Intent(
-                mActivityTestRule.getActivity().getApplicationContext(),
-                MainActivity.class);
-        mActivityTestRule.launchActivity(intent);
-
+        mServiceTestRule.startService(new Intent(appContext, ServiceExampleWorker.class));
     }
 }
